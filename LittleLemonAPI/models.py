@@ -3,11 +3,11 @@ from django.contrib.auth.models import User
 # Create your models here.
 
 class Category(models.Model):
-    title = models.CharField(db_index=True)
+    title = models.CharField(max_length=50, db_index=True)
     slug = models.SlugField()
     
 class MenuItem(models.Model):
-    title = models.CharField(db_index=True)
+    title = models.CharField(max_length=50, db_index=True)
     price = models.DecimalField(max_digits=6, decimal_places=2)
     featured = models.BooleanField(db_index=True)
     category = models.ForeignKey(Category, on_delete=models.PROTECT)
