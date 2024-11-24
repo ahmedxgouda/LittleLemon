@@ -159,4 +159,8 @@ SIMPLE_JWT = {
 DJOSER = {
     'USER_ID_FIELD': 'username',
     'LOGOUT_ON_PASSWORD_CHANGE': True,
+    'SERIALIZERS': {
+        'user_create': 'LittleLemonAPI.serializers.CustomUserCreateSerializer',
+        'current_user': 'LittleLemonAPI.serializers.CustomUserSerializer',
+    },
 }
