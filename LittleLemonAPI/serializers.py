@@ -64,23 +64,19 @@ class ReadCartItemSerializer(serializers.ModelSerializer):
         
 class WriteCartItemSerializer(serializers.ModelSerializer):
     menuitem_id = serializers.IntegerField(write_only=True)
+    user_id = serializers.IntegerField(write_only=True)
     
     class Meta:
         model = CartItem
-        fields = ['id', 'menuitem_id', 'quantity', 'unit_price', 'price', 'user']
+        fields = ['id', 'menuitem_id', 'quantity', 'unit_price', 'price', 'user_id']
         validators = [
             serializers.UniqueTogetherValidator(
                 queryset=CartItem.objects.all(),
-                fields=['user', 'menuitem_id'],
+                fields=['user_id', 'menuitem_id'],
                 message="You already have this item in your cart"
             )
         ]
         
-    def create(self, validated_data):
-        validated_data['price'] = validated_data['quantity'] * validated_data['unit_price']
-        validated_data['user'] = self.context['request'].user
-        return super().create(validated_data)
-    
     def validate(self, attrs):
         if attrs['quantity'] < 1:
             raise serializers.ValidationError("Quantity must be at least 1")
