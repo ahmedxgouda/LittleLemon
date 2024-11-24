@@ -6,6 +6,7 @@ from .models import MenuItem, Category, CartItem
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 from rest_framework import status
+from django.contrib.auth.models import Group
 
 # Create your views here.
 
@@ -97,3 +98,30 @@ class CartItemDetail(DestroyAPIView):
             raise PermissionDenied("You do not have permission to perform this action", code=403)
         return super().destroy(request, *args, **kwargs)
     
+class ManagerUserList(ListCreateAPIView):
+    queryset = User.objects.all()
+    
+    def list(self, request, *args, **kwargs):
+        if not self.request.user.groups.filter(name='Manager').exists():
+            raise PermissionDenied("You do not have permission to perform this action", code=403)
+        # return users who are managers
+        queryset = User.objects.filter(groups__name='Manager')
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+    
+    def get_serializer_class(self):
+        if self.request.method == 'GET':
+            return CustomUserSerializer
+        return AssignManagerSerializer
+    
+    def create(self, request, *args, **kwargs):
+        if not self.request.user.groups.filter(name='Manager').exists():
+            raise PermissionDenied("You do not have permission to perform this action", code=403)
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        group = Group.objects.get(name='Manager')
+        user.groups.add(group)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
