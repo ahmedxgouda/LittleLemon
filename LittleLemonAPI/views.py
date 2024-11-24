@@ -1,8 +1,11 @@
 from django.shortcuts import render
-from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
-from .serializers import ReadMenuItemSerializer, WriteMenuItemSerializer, CategorySerializer
-from .models import MenuItem, Category
+from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView, DestroyAPIView
+from rest_framework.viewsets import ModelViewSet
+from .serializers import *
+from .models import MenuItem, Category, CartItem
 from rest_framework.exceptions import PermissionDenied
+from rest_framework.response import Response
+from rest_framework import status
 
 # Create your views here.
 
@@ -62,3 +65,35 @@ class MenuItemDetail(RetrieveUpdateDestroyAPIView):
         if not self.request.user.groups.filter(name='Manager').exists():
             raise PermissionDenied("You do not have permission to perform this action", code=403)
         return super().destroy(request, *args, **kwargs)
+    
+class CartItemList(ModelViewSet):
+    queryset = CartItem.objects.all()
+    
+    def get_queryset(self):
+        return CartItem.objects.filter(user=self.request.user)
+    
+    def get_serializer_class(self):
+        if self.request.method == 'POST':
+            return WriteCartItemSerializer
+        return ReadCartItemSerializer
+    
+    def create(self, request, *args, **kwargs):
+        request.data['user'] = request.user.id
+        return super().create(request, *args, **kwargs)
+    
+    def destroy(self, request, *args, **kwargs):
+        self.queryset.filter(user=self.request.user).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+        
+    
+    
+class CartItemDetail(DestroyAPIView):
+    serializer_class = ReadCartItemSerializer
+    queryset = CartItem.objects.all()
+    
+    def destroy(self, request, *args, **kwargs):
+        obj = self.get_object()
+        if obj.user != self.request.user:
+            raise PermissionDenied("You do not have permission to perform this action", code=403)
+        return super().destroy(request, *args, **kwargs)
+    
