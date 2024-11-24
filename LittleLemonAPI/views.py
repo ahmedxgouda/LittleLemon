@@ -125,4 +125,14 @@ class ManagerUserList(ModelViewSet):
         user.groups.add(group)
         return Response(status=status.HTTP_201_CREATED)
 
-
+class RemoveManager(DestroyAPIView):
+    queryset = User.objects.all()
+    
+    def destroy(self, request, *args, **kwargs):
+        if not self.request.user.groups.filter(name='Manager').exists():
+            raise PermissionDenied("You do not have permission to perform this action", code=403)
+        user = self.get_object()
+        group = Group.objects.get(name='Manager')
+        user.groups.remove(group)
+        return Response(status=status.HTTP_200_OK)
+        
