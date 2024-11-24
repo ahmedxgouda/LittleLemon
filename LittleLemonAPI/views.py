@@ -113,7 +113,7 @@ class ManagerUserList(ModelViewSet):
     def get_serializer_class(self):
         if self.request.method == 'GET':
             return CustomUserSerializer
-        return AssignManagerSerializer
+        return AssignUserSerializer
     
     def create(self, request, *args, **kwargs):
         if not self.request.user.groups.filter(name='Manager').exists():
@@ -136,3 +136,39 @@ class RemoveManager(DestroyAPIView):
         user.groups.remove(group)
         return Response(status=status.HTTP_200_OK)
         
+class DeliveryCrewList(ModelViewSet):
+    queryset = User.objects.all()
+    
+    def get_queryset(self):
+        return User.objects.filter(groups__name='Delivery crew')
+    
+    def list(self, request, *args, **kwargs):
+        if not self.request.user.groups.filter(name='Manager').exists():
+            raise PermissionDenied("You do not have permission to perform this action", code=403)
+        return super().list(request, *args, **kwargs)
+    
+    def get_serializer_class(self):
+        if self.request.method == 'GET':
+            return CustomUserSerializer
+        return AssignUserSerializer
+    
+    def create(self, request, *args, **kwargs):
+        if not self.request.user.groups.filter(name='Manager').exists():
+            raise PermissionDenied("You do not have permission to perform this action", code=403)
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = User.objects.get(username=serializer.validated_data['username'])
+        group = Group.objects.get(name='Delivery crew')
+        user.groups.add(group)
+        return Response(status=status.HTTP_201_CREATED)
+
+class RemoveDeliveryCrew(DestroyAPIView):
+    queryset = User.objects.all()
+    
+    def destroy(self, request, *args, **kwargs):
+        if not self.request.user.groups.filter(name='Manager').exists():
+            raise PermissionDenied("You do not have permission to perform this action", code=403)
+        user = self.get_object()
+        group = Group.objects.get(name='Delivery crew')
+        user.groups.remove(group)
+        return Response(status=status.HTTP_200_OK)
