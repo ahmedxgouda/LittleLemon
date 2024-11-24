@@ -3,6 +3,7 @@ from .models import *
 import bleach
 from djoser.serializers import UserCreateSerializer, UserSerializer
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 
 class CustomUserCreateSerializer(UserCreateSerializer):
     first_name = serializers.CharField(max_length=30, required=True)
@@ -102,3 +103,48 @@ class WriteCartItemSerializer(serializers.ModelSerializer):
         return attrs
         
         
+class ReadOrderItemSerializer(serializers.ModelSerializer):
+    menuitem = ReadMenuItemSerializer()
+    class Meta:
+        model = OrderItem
+        fields = ['id', 'menuitem', 'quantity', 'unit_price', 'price', 'order']
+        depth = 1
+
+class ReadOrderSerializer(serializers.ModelSerializer):
+    order_items = ReadOrderItemSerializer(many=True, read_only=True)
+    class Meta:
+        model = Order
+        fields = ['id', 'total', 'status', 'date', 'delivery_crew', 'order_items']
+        
+        
+        
+class WriteOrderItemSerializer(serializers.ModelSerializer):
+    menuitem_id = serializers.IntegerField(write_only=True)
+    
+    class Meta:
+        model = OrderItem
+        fields = ['id', 'menuitem_id', 'quantity', 'unit_price', 'price']
+        
+    def validate(self, attrs):
+        if attrs['quantity'] < 1:
+            raise serializers.ValidationError("Quantity must be at least 1")
+        if attrs['unit_price'] < 0:
+            raise serializers.ValidationError("Price cannot be negative")
+        if attrs['price'] != attrs['quantity'] * attrs['unit_price']:
+            raise serializers.ValidationError("Price does not match quantity * unit price")
+        menuitem = get_object_or_404(MenuItem, pk=attrs['menuitem_id'])
+        if menuitem.price != attrs['unit_price']:
+            raise serializers.ValidationError("Unit price does not match menu item price")
+        return attrs
+    
+class WriteOrderSerializer(serializers.ModelSerializer):    
+    class Meta:
+        model = Order
+        fields = ['id', 'total', 'date']
+        
+    def validate(self, attrs):
+        if attrs['total'] < 0:
+            raise serializers.ValidationError("Total cannot be negative")
+        if attrs['date'] < timezone.now().date():
+            raise serializers.ValidationError("Date cannot be in the past")
+        return attrs

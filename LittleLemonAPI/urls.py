@@ -8,6 +8,7 @@ urlpatterns = [
     path('categories/<int:pk>/', CategoryDetail.as_view(), name="category-detail"),
     path('cart/menu-items/', CartItemList.as_view({'get': 'list', 'post': 'create', 'delete': 'destroy'}), name="cartitem"),
     path('cart/menu-items/<int:pk>/', CartItemDetail.as_view(), name="cartitem-detail"),
+    path('orders/', OrderList.as_view(), name="order"),
     path('groups/manager/users/', ManagerUserList.as_view({'get': 'list', 'post': 'create'}), name="manager"),
     path('groups/manager/users/<int:pk>/', RemoveManager.as_view(), name="remove-manager"),
     path('groups/delivery-crew/users/', DeliveryCrewList.as_view({'get': 'list', 'post': 'create'}), name="delivery-crew"),

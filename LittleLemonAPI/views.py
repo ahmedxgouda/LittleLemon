@@ -172,3 +172,32 @@ class RemoveDeliveryCrew(DestroyAPIView):
         group = Group.objects.get(name='Delivery crew')
         user.groups.remove(group)
         return Response(status=status.HTTP_200_OK)
+
+class OrderList(ListCreateAPIView):
+    def get_serializer_class(self):
+        if self.request.method == 'GET':
+            return ReadOrderSerializer
+        return WriteOrderSerializer
+    
+    def get_queryset(self):
+        if self.request.user.groups.filter(name='Manager').exists():
+            return Order.objects.all()
+        if self.request.user.groups.filter(name='Delivery crew').exists():
+            return Order.objects.filter(delivery_crew=self.request.user)
+        return Order.objects.filter(user=self.request.user)
+    
+    
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        items = CartItem.objects.filter(user=self.request.user)
+        total = sum([item.price for item in items])
+        if total != serializer.validated_data['total']:
+            raise serializers.ValidationError("Total does not match cart total")
+        order = Order.objects.create(user=self.request.user, total=total, status=False, date=serializer.validated_data['date'])
+        order.save()
+        for item in items:
+            OrderItem.objects.create(order=order, menuitem=item.menuitem, quantity=item.quantity, unit_price=item.unit_price, price=item.price)
+        items.delete()
+        return Response(status=status.HTTP_201_CREATED)
+    
