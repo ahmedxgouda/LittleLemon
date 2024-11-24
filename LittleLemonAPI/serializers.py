@@ -20,22 +20,20 @@ class CustomUserSerializer(UserSerializer):
         model = User
         fields = ('id', 'email', 'username', 'first_name', 'last_name')
         
-class AssignManagerSerializer(serializers.ModelField):
+class AssignManagerSerializer(serializers.ModelSerializer):
     username = serializers.CharField(max_length=150, required=True)
     
     class Meta:
         model = User
         fields = ['id', 'username']
         
-    def validate_user_id(self, value):
+    def validate_username(self, value):
         if not User.objects.filter(username=value).exists():
             raise serializers.ValidationError("User does not exist")
         if User.objects.get(username=value).groups.filter(name='Manager').exists():
             raise serializers.ValidationError("User is already a manager")
         return value
     
-    def save(self):
-        return User.objects.get(username=self.validated_data['username'])
         
 
 class CategorySerializer(serializers.ModelSerializer):

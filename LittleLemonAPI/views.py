@@ -98,16 +98,17 @@ class CartItemDetail(DestroyAPIView):
             raise PermissionDenied("You do not have permission to perform this action", code=403)
         return super().destroy(request, *args, **kwargs)
     
-class ManagerUserList(ListCreateAPIView):
+class ManagerUserList(ModelViewSet):
     queryset = User.objects.all()
+    
+    def get_queryset(self):
+        return User.objects.filter(groups__name='Manager')
+    
     
     def list(self, request, *args, **kwargs):
         if not self.request.user.groups.filter(name='Manager').exists():
             raise PermissionDenied("You do not have permission to perform this action", code=403)
-        # return users who are managers
-        queryset = User.objects.filter(groups__name='Manager')
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
+        return super().list(request, *args, **kwargs)
     
     def get_serializer_class(self):
         if self.request.method == 'GET':
@@ -119,9 +120,9 @@ class ManagerUserList(ListCreateAPIView):
             raise PermissionDenied("You do not have permission to perform this action", code=403)
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user = serializer.save()
+        user = User.objects.get(username=serializer.validated_data['username'])
         group = Group.objects.get(name='Manager')
         user.groups.add(group)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(status=status.HTTP_201_CREATED)
 
 
