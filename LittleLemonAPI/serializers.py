@@ -11,7 +11,7 @@ class ReadMenuItemSerializer(serializers.ModelSerializer):
     category = CategorySerializer()
     class Meta:
         model = MenuItem
-        fields = ['title', 'price', 'featured', 'category']
+        fields = ['id', 'title', 'price', 'featured', 'category']
         depth = 1
         
     
@@ -20,7 +20,7 @@ class WriteMenuItemSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = MenuItem
-        fields = ['title', 'price', 'featured', 'category_id']
+        fields = ['id', 'title', 'price', 'featured', 'category_id']
         
     def validate_title(self, value):
         return bleach.clean(value)
