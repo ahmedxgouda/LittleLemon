@@ -15,7 +15,7 @@ class MenuItem(models.Model):
     class Meta:
         ordering = ['title']
     
-class Cart(models.Model):
+class CartItem(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     menuitem = models.ForeignKey(MenuItem, on_delete=models.CASCADE)
     quantity = models.SmallIntegerField()
