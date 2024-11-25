@@ -14,5 +14,6 @@ urlpatterns = [
     path('groups/manager/users/<int:pk>/', RemoveManager.as_view(), name="remove-manager"),
     path('groups/delivery-crew/users/', DeliveryCrewList.as_view({'get': 'list', 'post': 'create'}), name="delivery-crew"),
     path('groups/delivery-crew/users/<int:pk>/', RemoveDeliveryCrew.as_view(), name="remove-delivery-crew"),
+    path('users/all/', UserList.as_view(), name="user"),
     path('', include('djoser.urls')),
 ]

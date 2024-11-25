@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView, DestroyAPIView
+from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView, DestroyAPIView, ListAPIView
 from rest_framework.viewsets import ModelViewSet
 from .serializers import *
 from .models import MenuItem, Category, CartItem
@@ -179,7 +179,7 @@ class OrderDetail(RetrieveUpdateDestroyAPIView):
         if self.request.method == 'GET':
             return ReadOrderSerializer
         elif self.request.method == 'PATCH':
-            return UpdateOrderSerializer
+            return PatchOrderSerializer
         return WriteOrderSerializer
     
     def retrieve(self, request, *args, **kwargs):
@@ -209,4 +209,19 @@ class OrderDetail(RetrieveUpdateDestroyAPIView):
             OrderItem.objects.create(order=order, menuitem=item.menuitem, quantity=item.quantity, unit_price=item.unit_price, price=item.price)
         items.delete()
         return Response(status=status.HTTP_201_CREATED)
+    
+    def partial_update(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        order = self.get_object()
+        if 'status' in serializer.validated_data:
+            order.status = serializer.validated_data['status']
+        if 'delivery_crew_id' in serializer.validated_data:
+            order.delivery_crew = User.objects.get(id=serializer.validated_data['delivery_crew_id'])
+        order.save()
+        return Response(status=status.HTTP_200_OK)
         
+class UserList(ListAPIView):
+    queryset = User.objects.all()
+    serializer_class = CustomUserSerializer
+    permission_classes = [IsManager]

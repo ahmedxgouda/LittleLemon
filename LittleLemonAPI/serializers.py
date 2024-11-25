@@ -118,8 +118,9 @@ class ReadOrderSerializer(serializers.ModelSerializer):
         model = Order
         fields = ['id', 'total', 'status', 'date', 'delivery_crew', 'order_items', 'user']
 
-class UpdateOrderSerializer(serializers.ModelSerializer):
-    delivery_crew_id = serializers.IntegerField(write_only=True)
+class PatchOrderSerializer(serializers.ModelSerializer):
+    delivery_crew_id = serializers.IntegerField(write_only=True, required=False)
+    status = serializers.BooleanField(write_only=True, required=False)
     class Meta:
         model = Order
         fields = ['id', 'status', 'delivery_crew_id']
@@ -130,6 +131,7 @@ class UpdateOrderSerializer(serializers.ModelSerializer):
         if 'delivery_crew_id' in attrs and not User.objects.filter(id=attrs['delivery_crew_id']).exists():
             raise serializers.ValidationError("Delivery crew does not exist")
         return attrs
+
 class WriteOrderItemSerializer(serializers.ModelSerializer):
     menuitem_id = serializers.IntegerField(write_only=True)
     

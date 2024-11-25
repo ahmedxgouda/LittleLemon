@@ -7,7 +7,7 @@ class IsManager(BasePermission):
 
 class IsDeliveryCrew(BasePermission):
     def has_permission(self, request, view):
-        return request.user.groups.filter(name='Delivery Crew').exists()
+        return request.user.groups.filter(name='Delivery crew').exists()
 
 class OnlyManagerCreates(BasePermission):
     def has_permission(self, request, view):
@@ -30,13 +30,13 @@ class OnlyManagerDestroys(BasePermission):
 class OnlyCustomerUpdates(BasePermission):
     def has_permission(self, request, view):
         if request.method == 'PUT':
-            return not (request.user.groups.filter(name='Manager').exists() or request.user.groups.filter(name='Delivery Crew').exists())
+            return not (request.user.groups.filter(name='Manager').exists() or request.user.groups.filter(name='Delivery crew').exists())
         return True
     
 class DeliveryCrewOnlyPatchesStatus(BasePermission):
     def has_permission(self, request, view):
         if request.method == 'PATCH':
-            if request.user.groups.filter(name='Delivery Crew').exists():
+            if request.user.groups.filter(name='Delivery crew').exists():
                 return len(request.data) == 1 and 'status' in request.data
         return True
                 
