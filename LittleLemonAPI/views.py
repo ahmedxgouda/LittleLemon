@@ -22,7 +22,7 @@ class CategoryList(ListCreateAPIView):
 class CategoryDetail(RetrieveUpdateDestroyAPIView):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
-    permission_classes = [OnlyManagerUpdates, OnlyManagerDestroys]
+    permission_classes = [OnlyManagerUpdates, OnlyManagerDestroys, OnlyManagerPatches]
     throttle_classes = [AnonRateThrottle, UserRateThrottle]
     
 class MenuItemList(ListCreateAPIView):
@@ -43,7 +43,7 @@ class MenuItemList(ListCreateAPIView):
 class MenuItemDetail(RetrieveUpdateDestroyAPIView):
     queryset = MenuItem.objects.all()
     serializer_class = ReadMenuItemSerializer
-    permission_classes = [OnlyManagerUpdates, OnlyManagerDestroys]
+    permission_classes = [OnlyManagerUpdates, OnlyManagerDestroys, OnlyManagerPatches]
     throttle_classes = [AnonRateThrottle, UserRateThrottle]
     
 class CartItemList(ModelViewSet):

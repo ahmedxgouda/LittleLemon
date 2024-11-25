@@ -20,6 +20,12 @@ class OnlyManagerUpdates(BasePermission):
         if request.method == 'PUT':
             return request.user.groups.filter(name='Manager').exists()
         return True
+    
+class OnlyManagerPatches(BasePermission):
+    def has_permission(self, request, view):
+        if request.method == 'PATCH':
+            return request.user.groups.filter(name='Manager').exists()
+        return True
 
 class OnlyManagerDestroys(BasePermission):
     def has_permission(self, request, view):
