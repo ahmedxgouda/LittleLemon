@@ -107,7 +107,7 @@ class ReadOrderItemSerializer(serializers.ModelSerializer):
     menuitem = ReadMenuItemSerializer()
     class Meta:
         model = OrderItem
-        fields = ['id', 'menuitem', 'quantity', 'unit_price', 'price', 'order']
+        fields = ['id', 'menuitem', 'quantity', 'unit_price', 'price']
         depth = 1
 
 class ReadOrderSerializer(serializers.ModelSerializer):
