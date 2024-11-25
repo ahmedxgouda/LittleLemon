@@ -112,12 +112,24 @@ class ReadOrderItemSerializer(serializers.ModelSerializer):
 
 class ReadOrderSerializer(serializers.ModelSerializer):
     order_items = ReadOrderItemSerializer(many=True, read_only=True)
+    delivery_crew = CustomUserSerializer(read_only=True)
+    user = CustomUserSerializer(read_only=True)
     class Meta:
         model = Order
-        fields = ['id', 'total', 'status', 'date', 'delivery_crew', 'order_items']
+        fields = ['id', 'total', 'status', 'date', 'delivery_crew', 'order_items', 'user']
+
+class UpdateOrderSerializer(serializers.ModelSerializer):
+    delivery_crew_id = serializers.IntegerField(write_only=True)
+    class Meta:
+        model = Order
+        fields = ['id', 'status', 'delivery_crew_id']
         
-        
-        
+    def validate(self, attrs):
+        if 'status' in attrs and attrs['status'] not in [True, False]:
+            raise serializers.ValidationError("Status must be a boolean")
+        if 'delivery_crew_id' in attrs and not User.objects.filter(id=attrs['delivery_crew_id']).exists():
+            raise serializers.ValidationError("Delivery crew does not exist")
+        return attrs
 class WriteOrderItemSerializer(serializers.ModelSerializer):
     menuitem_id = serializers.IntegerField(write_only=True)
     

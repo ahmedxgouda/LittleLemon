@@ -7,7 +7,7 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth.models import Group
-
+from .permissions import *
 # Create your views here.
 
 class CategoryList(ListCreateAPIView):
@@ -15,43 +15,27 @@ class CategoryList(ListCreateAPIView):
     ordering_fields = ['title']
     search_fields = ['title']
     serializer_class = CategorySerializer
-    
-    def create(self, request, *args, **kwargs):
-        if not self.request.user.groups.filter(name='Manager').exists():
-            raise PermissionDenied("You do not have permission to perform this action", code=403)
-        return super().create(request, *args, **kwargs)
+    permission_classes = [OnlyManagerCreates]
 
     
 class CategoryDetail(RetrieveUpdateDestroyAPIView):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
-    
-    def update(self, request, *args, **kwargs):
-        if not self.request.user.groups.filter(name='Manager').exists():
-            raise PermissionDenied("You do not have permission to perform this action", code=403)
-        return super().update(request, *args, **kwargs)
-    
-    def destroy(self, request, *args, **kwargs):
-        if not self.request.user.groups.filter(name='Manager').exists():
-            raise PermissionDenied("You do not have permission to perform this action", code=403)
-        return super().destroy(request, *args, **kwargs)
+    permission_classes = [OnlyManagerUpdates, OnlyManagerDestroys]
     
 class MenuItemList(ListCreateAPIView):
     queryset = MenuItem.objects.all()
     ordering_fields = ['title', 'featured']
     search_fields = ['title']
     filter_fields = ['category', 'featured']
+    permission_classes = [OnlyManagerCreates]
     
     def get_serializer_class(self):
         if self.request.method == 'GET':
             return ReadMenuItemSerializer
         else:
             return WriteMenuItemSerializer
-        
-    def create(self, request, *args, **kwargs):
-        if not self.request.user.groups.filter(name='Manager').exists():
-            raise PermissionDenied("You do not have permission to perform this action", code=403)
-        return super().create(request, *args, **kwargs)
+
     
 class MenuItemDetail(RetrieveUpdateDestroyAPIView):
     queryset = MenuItem.objects.all()
@@ -100,15 +84,10 @@ class CartItemDetail(DestroyAPIView):
     
 class ManagerUserList(ModelViewSet):
     queryset = User.objects.all()
+    permission_classes = [IsManager]
     
     def get_queryset(self):
         return User.objects.filter(groups__name='Manager')
-    
-    
-    def list(self, request, *args, **kwargs):
-        if not self.request.user.groups.filter(name='Manager').exists():
-            raise PermissionDenied("You do not have permission to perform this action", code=403)
-        return super().list(request, *args, **kwargs)
     
     def get_serializer_class(self):
         if self.request.method == 'GET':
@@ -116,8 +95,6 @@ class ManagerUserList(ModelViewSet):
         return AssignUserSerializer
     
     def create(self, request, *args, **kwargs):
-        if not self.request.user.groups.filter(name='Manager').exists():
-            raise PermissionDenied("You do not have permission to perform this action", code=403)
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = User.objects.get(username=serializer.validated_data['username'])
@@ -127,10 +104,9 @@ class ManagerUserList(ModelViewSet):
 
 class RemoveManager(DestroyAPIView):
     queryset = User.objects.all()
+    permission_classes = [IsManager]
     
     def destroy(self, request, *args, **kwargs):
-        if not self.request.user.groups.filter(name='Manager').exists():
-            raise PermissionDenied("You do not have permission to perform this action", code=403)
         user = self.get_object()
         group = Group.objects.get(name='Manager')
         user.groups.remove(group)
@@ -138,23 +114,17 @@ class RemoveManager(DestroyAPIView):
         
 class DeliveryCrewList(ModelViewSet):
     queryset = User.objects.all()
+    permission_classes = [IsManager]
     
     def get_queryset(self):
         return User.objects.filter(groups__name='Delivery crew')
-    
-    def list(self, request, *args, **kwargs):
-        if not self.request.user.groups.filter(name='Manager').exists():
-            raise PermissionDenied("You do not have permission to perform this action", code=403)
-        return super().list(request, *args, **kwargs)
-    
+      
     def get_serializer_class(self):
         if self.request.method == 'GET':
             return CustomUserSerializer
         return AssignUserSerializer
     
     def create(self, request, *args, **kwargs):
-        if not self.request.user.groups.filter(name='Manager').exists():
-            raise PermissionDenied("You do not have permission to perform this action", code=403)
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = User.objects.get(username=serializer.validated_data['username'])
@@ -164,10 +134,9 @@ class DeliveryCrewList(ModelViewSet):
 
 class RemoveDeliveryCrew(DestroyAPIView):
     queryset = User.objects.all()
+    permission_classes = [IsManager]
     
     def destroy(self, request, *args, **kwargs):
-        if not self.request.user.groups.filter(name='Manager').exists():
-            raise PermissionDenied("You do not have permission to perform this action", code=403)
         user = self.get_object()
         group = Group.objects.get(name='Delivery crew')
         user.groups.remove(group)
@@ -201,3 +170,25 @@ class OrderList(ListCreateAPIView):
         items.delete()
         return Response(status=status.HTTP_201_CREATED)
     
+
+class OrderDetail(RetrieveUpdateDestroyAPIView):
+    queryset = Order.objects.all()
+    permission_classes = [OnlyCustomerUpdates, DeliveryCrewOnlyPatchesStatus, ManagerUserOnlyPatchesStatusAndCrew, OnlyManagerDestroys] 
+
+    def get_serializer_class(self):
+        if self.request.method == 'GET':
+            return ReadOrderSerializer
+        elif self.request.method == 'PATCH':
+            return UpdateOrderSerializer
+        return WriteOrderSerializer
+    
+    def retrieve(self, request, *args, **kwargs):
+        is_manager = self.request.user.groups.filter(name='Manager').exists()
+        is_delivery_crew = self.request.user.groups.filter(name='Delivery crew').exists()
+        if not is_manager and not is_delivery_crew:
+            if self.get_object().user != self.request.user:
+                raise PermissionDenied("Customers only view their own orders", code=403)
+        elif is_delivery_crew:
+            if self.get_object().delivery_crew != self.request.user:
+                raise PermissionDenied("Delivery crew only view their own orders", code=403)
+        return super().retrieve(request, *args, **kwargs)
