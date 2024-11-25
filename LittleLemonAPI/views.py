@@ -192,3 +192,21 @@ class OrderDetail(RetrieveUpdateDestroyAPIView):
             if self.get_object().delivery_crew != self.request.user:
                 raise PermissionDenied("Delivery crew only view their own orders", code=403)
         return super().retrieve(request, *args, **kwargs)
+
+    def update(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        items = CartItem.objects.filter(user=self.request.user)
+        total = sum([item.price for item in items])
+        if total != serializer.validated_data['total']:
+            raise serializers.ValidationError("Total does not match cart total")
+        order = self.get_object()
+        order.total = total
+        order.date = serializer.validated_data['date']
+        order.save()
+        OrderItem.objects.filter(order=order).delete()
+        for item in items:
+            OrderItem.objects.create(order=order, menuitem=item.menuitem, quantity=item.quantity, unit_price=item.unit_price, price=item.price)
+        items.delete()
+        return Response(status=status.HTTP_201_CREATED)
+        
