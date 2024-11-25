@@ -8,6 +8,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth.models import Group
 from .permissions import *
+from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
 # Create your views here.
 
 class CategoryList(ListCreateAPIView):
@@ -16,12 +17,13 @@ class CategoryList(ListCreateAPIView):
     search_fields = ['title']
     serializer_class = CategorySerializer
     permission_classes = [OnlyManagerCreates]
-
+    throttle_classes = [AnonRateThrottle, UserRateThrottle]
     
 class CategoryDetail(RetrieveUpdateDestroyAPIView):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     permission_classes = [OnlyManagerUpdates, OnlyManagerDestroys]
+    throttle_classes = [AnonRateThrottle, UserRateThrottle]
     
 class MenuItemList(ListCreateAPIView):
     queryset = MenuItem.objects.all()
@@ -29,6 +31,7 @@ class MenuItemList(ListCreateAPIView):
     search_fields = ['title']
     filter_fields = ['category', 'featured']
     permission_classes = [OnlyManagerCreates]
+    throttle_classes = [AnonRateThrottle, UserRateThrottle]
     
     def get_serializer_class(self):
         if self.request.method == 'GET':
@@ -40,19 +43,12 @@ class MenuItemList(ListCreateAPIView):
 class MenuItemDetail(RetrieveUpdateDestroyAPIView):
     queryset = MenuItem.objects.all()
     serializer_class = ReadMenuItemSerializer
-    
-    def update(self, request, *args, **kwargs):
-        if not self.request.user.groups.filter(name='Manager').exists():
-            raise PermissionDenied("You do not have permission to perform this action", code=403)
-        return super().update(request, *args, **kwargs)
-    
-    def destroy(self, request, *args, **kwargs):
-        if not self.request.user.groups.filter(name='Manager').exists():
-            raise PermissionDenied("You do not have permission to perform this action", code=403)
-        return super().destroy(request, *args, **kwargs)
+    permission_classes = [OnlyManagerUpdates, OnlyManagerDestroys]
+    throttle_classes = [AnonRateThrottle, UserRateThrottle]
     
 class CartItemList(ModelViewSet):
     queryset = CartItem.objects.all()
+    throttle_classes = [UserRateThrottle]
     
     def get_queryset(self):
         return CartItem.objects.filter(user=self.request.user)
@@ -75,6 +71,7 @@ class CartItemList(ModelViewSet):
 class CartItemDetail(DestroyAPIView):
     serializer_class = ReadCartItemSerializer
     queryset = CartItem.objects.all()
+    throttle_classes = [UserRateThrottle]
     
     def destroy(self, request, *args, **kwargs):
         obj = self.get_object()
@@ -85,7 +82,8 @@ class CartItemDetail(DestroyAPIView):
 class ManagerUserList(ModelViewSet):
     queryset = User.objects.all()
     permission_classes = [IsManager]
-    
+    throttle_classes = [UserRateThrottle]
+
     def get_queryset(self):
         return User.objects.filter(groups__name='Manager')
     
@@ -105,6 +103,7 @@ class ManagerUserList(ModelViewSet):
 class RemoveManager(DestroyAPIView):
     queryset = User.objects.all()
     permission_classes = [IsManager]
+    throttle_classes = [UserRateThrottle]
     
     def destroy(self, request, *args, **kwargs):
         user = self.get_object()
@@ -115,6 +114,7 @@ class RemoveManager(DestroyAPIView):
 class DeliveryCrewList(ModelViewSet):
     queryset = User.objects.all()
     permission_classes = [IsManager]
+    throttle_classes = [UserRateThrottle]
     
     def get_queryset(self):
         return User.objects.filter(groups__name='Delivery crew')
@@ -135,6 +135,7 @@ class DeliveryCrewList(ModelViewSet):
 class RemoveDeliveryCrew(DestroyAPIView):
     queryset = User.objects.all()
     permission_classes = [IsManager]
+    throttle_classes = [UserRateThrottle]
     
     def destroy(self, request, *args, **kwargs):
         user = self.get_object()
@@ -143,6 +144,11 @@ class RemoveDeliveryCrew(DestroyAPIView):
         return Response(status=status.HTTP_200_OK, data="Delivery crew removed")
 
 class OrderList(ListCreateAPIView):
+    ordering_fields = ['date', 'status']
+    search_fields = ['date', 'status']
+    filter_fields = ['status']
+    throttle_classes = [UserRateThrottle]
+    
     def get_serializer_class(self):
         if self.request.method == 'GET':
             return ReadOrderSerializer
@@ -173,7 +179,8 @@ class OrderList(ListCreateAPIView):
 
 class OrderDetail(RetrieveUpdateDestroyAPIView):
     queryset = Order.objects.all()
-    permission_classes = [OnlyCustomerUpdates, DeliveryCrewOnlyPatchesStatus, ManagerUserOnlyPatchesStatusAndCrew, OnlyManagerDestroys] 
+    permission_classes = [OnlyCustomerUpdates, DeliveryCrewOnlyPatchesStatus, ManagerUserOnlyPatchesStatusAndCrew, OnlyManagerDestroys]
+    throttle_classes = [UserRateThrottle]
 
     def get_serializer_class(self):
         if self.request.method == 'GET':
@@ -225,3 +232,4 @@ class UserList(ListAPIView):
     queryset = User.objects.all()
     serializer_class = CustomUserSerializer
     permission_classes = [IsManager]
+    throttle_classes = [UserRateThrottle]
