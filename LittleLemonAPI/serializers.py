@@ -22,11 +22,11 @@ class CustomUserSerializer(UserSerializer):
         fields = ('id', 'email', 'username', 'first_name', 'last_name')
         
 class AssignUserSerializer(serializers.ModelSerializer):
-    username = serializers.CharField(max_length=150, required=True)
+    user_id = serializers.IntegerField(write_only=True)
     
     class Meta:
         model = User
-        fields = ['id', 'username']
+        fields = ['id', 'user_id']
         
     def validate_username(self, value):
         if not User.objects.filter(username=value).exists():
@@ -54,6 +54,7 @@ class WriteMenuItemSerializer(serializers.ModelSerializer):
         fields = ['id', 'title', 'price', 'featured', 'category_id']
         
     def validate_title(self, value):
+        # to avoid XSS attacks
         return bleach.clean(value)
     
     def validate_price(self, value):

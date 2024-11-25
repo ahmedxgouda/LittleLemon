@@ -97,10 +97,10 @@ class ManagerUserList(ModelViewSet):
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user = User.objects.get(username=serializer.validated_data['username'])
+        user = get_object_or_404(User, id=serializer.validated_data['user_id'])
         group = Group.objects.get(name='Manager')
         user.groups.add(group)
-        return Response(status=status.HTTP_201_CREATED)
+        return Response(status=status.HTTP_201_CREATED, data="Manager added")
 
 class RemoveManager(DestroyAPIView):
     queryset = User.objects.all()
@@ -110,7 +110,7 @@ class RemoveManager(DestroyAPIView):
         user = self.get_object()
         group = Group.objects.get(name='Manager')
         user.groups.remove(group)
-        return Response(status=status.HTTP_200_OK)
+        return Response(status=status.HTTP_200_OK, data="Manager removed")
         
 class DeliveryCrewList(ModelViewSet):
     queryset = User.objects.all()
@@ -127,10 +127,10 @@ class DeliveryCrewList(ModelViewSet):
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user = User.objects.get(username=serializer.validated_data['username'])
+        user = get_object_or_404(User, id=serializer.validated_data['user_id'])
         group = Group.objects.get(name='Delivery crew')
         user.groups.add(group)
-        return Response(status=status.HTTP_201_CREATED)
+        return Response(status=status.HTTP_201_CREATED, data="Delivery crew added")
 
 class RemoveDeliveryCrew(DestroyAPIView):
     queryset = User.objects.all()
@@ -140,7 +140,7 @@ class RemoveDeliveryCrew(DestroyAPIView):
         user = self.get_object()
         group = Group.objects.get(name='Delivery crew')
         user.groups.remove(group)
-        return Response(status=status.HTTP_200_OK)
+        return Response(status=status.HTTP_200_OK, data="Delivery crew removed")
 
 class OrderList(ListCreateAPIView):
     def get_serializer_class(self):
@@ -168,7 +168,7 @@ class OrderList(ListCreateAPIView):
         for item in items:
             OrderItem.objects.create(order=order, menuitem=item.menuitem, quantity=item.quantity, unit_price=item.unit_price, price=item.price)
         items.delete()
-        return Response(status=status.HTTP_201_CREATED)
+        return Response(status=status.HTTP_201_CREATED, data="Order created")
     
 
 class OrderDetail(RetrieveUpdateDestroyAPIView):
@@ -208,7 +208,7 @@ class OrderDetail(RetrieveUpdateDestroyAPIView):
         for item in items:
             OrderItem.objects.create(order=order, menuitem=item.menuitem, quantity=item.quantity, unit_price=item.unit_price, price=item.price)
         items.delete()
-        return Response(status=status.HTTP_201_CREATED)
+        return Response(status=status.HTTP_200_OK, data="Order updated")
     
     def partial_update(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -219,7 +219,7 @@ class OrderDetail(RetrieveUpdateDestroyAPIView):
         if 'delivery_crew_id' in serializer.validated_data:
             order.delivery_crew = User.objects.get(id=serializer.validated_data['delivery_crew_id'])
         order.save()
-        return Response(status=status.HTTP_200_OK)
+        return Response(status=status.HTTP_200_OK, data="Order updated")
         
 class UserList(ListAPIView):
     queryset = User.objects.all()
